@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BalanceU | Planificador de Horarios & Balance Estudio-Trabajo-Vida</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            cat: {
+              estudio: '#4f46e5', // indigo
+              trabajo: '#ea580c', // orange
+              ocio: '#0284c7',    // sky
+              deporte: '#16a34a', // green
+              tramites: '#9333ea' // purple
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Estilos personalizados para barra de scroll sutil */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .custom-shadow {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    }
+    .card-transition {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- HEADER / NAVEGACIÓN -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i class="fa-solid fa-scale-balanced text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            Balance<span class="text-indigo-600">U</span>
+            <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-semibold border border-indigo-200">Estudiantes & Egresados</span>
+          </h1>
+          <p class="text-xs text-slate-500">Planificador de Horarios & Balance Estudio-Trabajo-Vida</p>
+        </div>
+      </div>
+
+      <!-- Acciones de cabecera -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="btnOpenAddModalMobile" class="md:hidden inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-sm transition">
+          <i class="fa-solid fa-plus"></i> Nueva Tarea
+        </button>
+        <button id="btnResetDemo" title="Restablecer datos de ejemplo recomendados" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition border border-slate-200">
+          <i class="fa-solid fa-rotate-right text-slate-500"></i>
+          <span class="hidden sm:inline">Cargar Demo</span>
+        </button>
+        <button id="btnClearAll" title="Eliminar todas las actividades" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium rounded-lg transition border border-red-200">
+          <i class="fa-regular fa-trash-can"></i>
+          <span class="hidden sm:inline">Vaciar</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 space-y-6">
+
+    <!-- SECCIÓN DE ALERTA DE SALUD Y SOBRECARGA (BURN-OUT ALERT) -->
+    <section id="healthAlertContainer" class="card-transition">
+      <!-- Se llena dinámicamente según las horas totales -->
+    </section>
+
+    <!-- TARJETAS DE MÉTRICAS RÁPIDAS (KPIs) -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <!-- KPI 1: Horas Totales Planificadas -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 custom-shadow flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Horas Activas</p>
+          <div class="flex items-baseline gap-1.5 mt-1">
+            <span id="kpiTotalHours" class="text-2xl sm:text-3xl font-extrabold text-slate-900">0</span>
+            <span class="text-xs text-slate-500 font-medium">/ 168h sem.</span>
+          </div>
+          <p id="kpiWeeklyPct" class="text-xs text-indigo-600 font-medium mt-0.5">0% de tu semana</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+          <i class="fa-regular fa-clock"></i>
+        </div>
+      </div>
+
+      <!-- KPI 2: Horas de Descanso y Sueño Disponible -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 custom-shadow flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Tiempo Libre / Sueño</p>
+          <div class="flex items-baseline gap-1.5 mt-1">
+            <span id="kpiFreeHours" class="text-2xl sm:text-3xl font-extrabold text-emerald-600">168</span>
+            <span class="text-xs text-slate-500 font-medium">hrs libres</span>
+          </div>
+          <p id="kpiSleepAvg" class="text-xs text-emerald-600 font-medium mt-0.5">~24.0 h/día descanso</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-bed"></i>
+        </div>
+      </div>
+
+      <!-- KPI 3: Categoría Predominante -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 custom-shadow flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Enfoque Principal</p>
+          <div class="mt-1">
+            <span id="kpiTopCategory" class="text-lg sm:text-xl font-bold text-slate-900 truncate block">Ninguno</span>
+          </div>
+          <p id="kpiTopCategoryHours" class="text-xs text-slate-500 font-medium mt-0.5">0 hrs dedicadas</p>
+        </div>
+        <div id="kpiTopCatIconWrapper" class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-graduation-cap" id="kpiTopCatIcon"></i>
+        </div>
+      </div>
+
+      <!-- KPI 4: Tareas y Cumplimiento -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 custom-shadow flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Cumplimiento</p>
+          <div class="flex items-baseline gap-1.5 mt-1">
+            <span id="kpiCompletedRatio" class="text-2xl sm:text-3xl font-extrabold text-slate-900">0/0</span>
+            <span class="text-xs text-slate-500 font-medium">tareas</span>
+          </div>
+          <p id="kpiCompletedPct" class="text-xs text-slate-500 font-medium mt-0.5">0% completado</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYOUT PRINCIPAL: 2 COLUMNAS (IZQUIERDA: FORM + GRÁFICO, DERECHA: HORARIO Y LISTA) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- COLUMNA LATERAL (LG: SPAN 5): FORMULARIO Y GRÁFICO -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- FORMULARIO PARA AGREGAR ACTIVIDAD -->
+        <section class="bg-white rounded-2xl border border-slate-200 custom-shadow p-5 sm:p-6">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
+                <i class="fa-solid fa-calendar-plus"></i>
+              </span>
+              <h2 class="text-base font-bold text-slate-900">Nueva Actividad</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-medium">Asigna tu tiempo</span>
+          </div>
+
+          <form id="activityForm" class="space-y-4">
+            <!-- Nombre de la actividad -->
+            <div>
+              <label for="taskName" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Nombre de la Actividad / Asignatura <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <i class="fa-solid fa-pen text-xs"></i>
+                </span>
+                <input 
+                  type="text" 
+                  id="taskName" 
+                  required
+                  placeholder="Ej. Cálculo Diferencial, Turno laboral, Gimnasio..."
+                  class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
+                >
+              </div>
+            </div>
+
+            <!-- Categoría y Día en Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Categoría -->
+              <div>
+                <label for="taskCategory" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Categoría <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <select 
+                    id="taskCategory" 
+                    required
+                    class="w-full py-2 px-3 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition cursor-pointer"
+                  >
+                    <option value="Estudio">📚 Estudio / Universidad</option>
+                    <option value="Trabajo">💼 Trabajo / Prácticas</option>
+                    <option value="Ocio/Descanso">🎮 Ocio / Descanso</option>
+                    <option value="Deporte/Salud">🏃 Deporte / Salud</option>
+                    <option value="Trámites">📋 Trámites / Hogar</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Día de la semana -->
+              <div>
+                <label for="taskDay" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Día de la Semana <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <select 
+                    id="taskDay" 
+                    required
+                    class="w-full py-2 px-3 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition cursor-pointer"
+                  >
+                    <option value="Lunes">Lunes</option>
+                    <option value="Martes">Martes</option>
+                    <option value="Miércoles">Miércoles</option>
+                    <option value="Jueves">Jueves</option>
+                    <option value="Viernes">Viernes</option>
+                    <option value="Sábado">Sábado</option>
+                    <option value="Domingo">Domingo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Duración en horas -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="taskDuration" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Duración Estimada (Horas) <span class="text-red-500">*</span>
+                </label>
+                <span id="durationDisplay" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                  2.0 hrs
+                </span>
+              </div>
+              <div class="flex items-center gap-3">
+                <input 
+                  type="number" 
+                  id="taskDuration" 
+                  min="0.5" 
+                  max="16" 
+                  step="0.5" 
+                  value="2"
+                  required
+                  class="w-28 py-2 px-3 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition font-semibold"
+                >
+                <!-- Botones rápidos de horas -->
+                <div class="flex flex-wrap gap-1.5 flex-1">
+                  <button type="button" class="btn-quick-hour px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg font-medium border border-slate-200 transition" data-hours="1">1h</button>
+                  <button type="button" class="btn-quick-hour px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg font-medium border border-slate-200 transition" data-hours="2">2h</button>
+                  <button type="button" class="btn-quick-hour px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg font-medium border border-slate-200 transition" data-hours="3">3h</button>
+                  <button type="button" class="btn-quick-hour px-2.5 py-1 text-xs bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg font-medium border border-slate-200 transition" data-hours="4">4h</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón de Envío -->
+            <button 
+              type="submit" 
+              class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm rounded-xl shadow-md shadow-indigo-200 flex items-center justify-center gap-2 transition duration-150 transform hover:-translate-y-0.5"
+            >
+              <i class="fa-solid fa-plus text-xs"></i>
+              <span>Agregar al Horario Semanal</span>
+            </button>
+          </form>
+        </section>
+
+        <!-- DASHBOARD CON MÉTRICAS Y GRÁFICO CIRCULAR -->
+        <section class="bg-white rounded-2xl border border-slate-200 custom-shadow p-5 sm:p-6">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
+                <i class="fa-solid fa-chart-pie"></i>
+              </span>
+              <h2 class="text-base font-bold text-slate-900">Balance por Categorías</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-medium">Distribución %</span>
+          </div>
+
+          <!-- Contenedor del Gráfico -->
+          <div class="relative flex items-center justify-center py-2" style="min-height: 230px;">
+            <canvas id="categoryChart" class="max-h-[220px] max-w-full"></canvas>
+            <div id="chartEmptyMessage" class="hidden absolute inset-0 flex flex-col items-center justify-center text-slate-400 text-sm text-center p-4">
+              <i class="fa-solid fa-chart-simple text-3xl mb-2 text-slate-300"></i>
+              <p class="font-medium">Sin actividades registradas</p>
+              <p class="text-xs text-slate-400 mt-1">Agrega tareas para visualizar tu balance.</p>
+            </div>
+          </div>
+
+          <!-- Leyenda de Categorías Dinámica -->
+          <div id="categoryBreakdown" class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+            <!-- Inyectado por JS -->
+          </div>
+
+          <!-- Consejos de Balance Universitario -->
+          <div class="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-2.5">
+            <i class="fa-solid fa-lightbulb text-amber-500 text-sm mt-0.5 shrink-0"></i>
+            <div>
+              <span class="font-semibold text-slate-800">Regla de Oro del Egresado:</span>
+              <p class="mt-0.5 text-slate-500 leading-relaxed">
+                Para rendir en la universidad sin descuidar tu empleo, mantén al menos <span class="font-semibold text-slate-700">7-8 horas diarias de sueño</span> y reserva un bloque fijo para ocio o deporte.
+              </p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- COLUMNA PRINCIPAL (LG: SPAN 7): PLANIFICADOR SEMANAL Y ACTIVIDADES -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- PANEL DE CONTROL / FILTROS Y VISTAS -->
+        <section class="bg-white rounded-2xl border border-slate-200 custom-shadow p-4 sm:p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">Horario de la Semana</h2>
+              <p class="text-xs text-slate-500">Supervisa tus responsabilidades diarias y completa tus objetivos</p>
+            </div>
+
+            <!-- Selector de Modo de Vista -->
+            <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto text-xs font-semibold">
+              <button id="viewModeAll" class="px-3 py-1.5 rounded-lg bg-white text-indigo-600 shadow-sm transition">
+                <i class="fa-solid fa-calendar-week mr-1"></i> Semana Completa
+              </button>
+              <button id="viewModeSingle" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+                <i class="fa-solid fa-calendar-day mr-1"></i> Por Día
+              </button>
+            </div>
+          </div>
+
+          <!-- Selector de Día (Visible solo en modo "Por Día") -->
+          <div id="singleDaySelectorContainer" class="hidden mt-4 pt-3 border-t border-slate-100">
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Selecciona un Día:</label>
+            <div class="flex flex-wrap gap-1.5" id="dayTabsGroup">
+              <!-- Botones de Lunes a Domingo generados por JS -->
+            </div>
+          </div>
+
+          <!-- Filtros de Categoría y Búsqueda -->
+          <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <!-- Píldoras de Filtro de Categoría -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs no-scrollbar">
+              <span class="text-slate-400 font-medium mr-1 text-xs"><i class="fa-solid fa-filter"></i></span>
+              <button class="filter-cat-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-800 text-white" data-cat="all">Todas</button>
+              <button class="filter-cat-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="Estudio">📚 Estudio</button>
+              <button class="filter-cat-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="Trabajo">💼 Trabajo</button>
+              <button class="filter-cat-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="Ocio/Descanso">🎮 Ocio</button>
+              <button class="filter-cat-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="Deporte/Salud">🏃 Deporte</button>
+              <button class="filter-cat-btn px-2.5 py-1 rounded-lg font-medium transition bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="Trámites">📋 Trámites</button>
+            </div>
+
+            <!-- Buscador Rápido -->
+            <div class="relative w-full md:w-48 shrink-0">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <input 
+                type="text" 
+                id="searchActivities" 
+                placeholder="Buscar tarea..." 
+                class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition"
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- CONTENEDOR PRINCIPAL DE DÍAS Y ACTIVIDADES -->
+        <section id="scheduleViewContainer" class="space-y-4">
+          <!-- Renderizado dinámico de tarjetas de días y actividades -->
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-800">BalanceU</span>
+        <span>— Herramienta de productividad y bienestar para nuevos universitarios</span>
+      </div>
+      <div class="text-slate-400">
+        Datos guardados localmente en tu navegador (<span class="font-medium text-slate-600">localStorage</span>).
+      </div>
+    </div>
+  </footer>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- JAVASCRIPT VANILLA PURO -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ==========================================
+      // CONSTANTES Y CONFIGURACIÓN
+      // ==========================================
+      const STORAGE_KEY = 'balanceu_planner_activities_v2';
+      const DAYS_ORDER = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+      const TOTAL_WEEK_HOURS = 168; // 24 * 7
+      const HEALTHY_HOURS_LIMIT = 112; // Máximo saludable: 16h activas/día x 7 = 112h. Deja al menos 8h/día para dormir y alimentarse.
+
+      const CATEGORY_META = {
+        'Estudio': {
+          label: 'Estudio / Universidad',
+          badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          dotColor: '#4f46e5',
+          icon: 'fa-solid fa-graduation-cap',
+          colorName: 'Indigo'
+        },
+        'Trabajo': {
+          label: 'Trabajo / Prácticas',
+          badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+          dotColor: '#ea580c',
+          icon: 'fa-solid fa-briefcase',
+          colorName: 'Naranja'
+        },
+        'Ocio/Descanso': {
+          label: 'Ocio / Descanso',
+          badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
+          dotColor: '#0284c7',
+          icon: 'fa-solid fa-gamepad',
+          colorName: 'Celeste'
+        },
+        'Deporte/Salud': {
+          label: 'Deporte / Salud',
+          badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          dotColor: '#16a34a',
+          icon: 'fa-solid fa-heart-pulse',
+          colorName: 'Verde'
+        },
+        'Trámites': {
+          label: 'Trámites / Hogar',
+          badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
+          dotColor: '#9333ea',
+          icon: 'fa-solid fa-clipboard-check',
+          colorName: 'Púrpura'
+        }
+      };
+
+      // DATOS DE PRUEBA INICIALES (MOCK DATA PARA RECIÉN EGRESADOS)
+      const MOCK_ACTIVITIES = [
+        // Lunes
+        { id: 'mock-1', title: 'Clases: Cálculo Diferencial', category: 'Estudio', day: 'Lunes', hours: 3.5, completed: true, createdAt: Date.now() - 600000 },
+        { id: 'mock-2', title: 'Lectura capítulo 2 Física Mecánica', category: 'Estudio', day: 'Lunes', hours: 2.0, completed: false, createdAt: Date.now() - 550000 },
+        { id: 'mock-3', title: 'Gimnasio y rutina de fuerza', category: 'Deporte/Salud', day: 'Lunes', hours: 1.5, completed: true, createdAt: Date.now() - 500000 },
+        // Martes
+        { id: 'mock-4', title: 'Turno medio tiempo: Asistente Técnico', category: 'Trabajo', day: 'Martes', hours: 4.5, completed: true, createdAt: Date.now() - 450000 },
+        { id: 'mock-5', title: 'Laboratorio de Algoritmos & Programación', category: 'Estudio', day: 'Martes', hours: 3.0, completed: false, createdAt: Date.now() - 400000 },
+        { id: 'mock-6', title: 'Ver serie favorita / Tiempo relax', category: 'Ocio/Descanso', day: 'Martes', hours: 2.0, completed: false, createdAt: Date.now() - 350000 },
+        // Miércoles
+        { id: 'mock-7', title: 'Clases: Cálculo Diferencial', category: 'Estudio', day: 'Miércoles', hours: 3.5, completed: false, createdAt: Date.now() - 300000 },
+        { id: 'mock-8', title: 'Trámite: Renovación credencial universitaria', category: 'Trámites', day: 'Miércoles', hours: 1.5, completed: true, createdAt: Date.now() - 280000 },
+        { id: 'mock-9', title: 'Salir a trotar al parque', category: 'Deporte/Salud', day: 'Miércoles', hours: 1.0, completed: false, createdAt: Date.now() - 250000 },
+        // Jueves
+        { id: 'mock-10', title: 'Turno medio tiempo: Asistente Técnico', category: 'Trabajo', day: 'Jueves', hours: 4.5, completed: false, createdAt: Date.now() - 200000 },
+        { id: 'mock-11', title: 'Sesión de estudio grupal para certamen', category: 'Estudio', day: 'Jueves', hours: 2.5, completed: false, createdAt: Date.now() - 150000 },
+        { id: 'mock-12', title: 'Jugar videojuegos con amigos', category: 'Ocio/Descanso', day: 'Jueves', hours: 2.5, completed: false, createdAt: Date.now() - 120000 },
+        // Viernes
+        { id: 'mock-13', title: 'Laboratorio de Algoritmos & Programación', category: 'Estudio', day: 'Viernes', hours: 3.0, completed: false, createdAt: Date.now() - 100000 },
+        { id: 'mock-14', title: 'Salida de integración universitaria / Cine', category: 'Ocio/Descanso', day: 'Viernes', hours: 3.5, completed: false, createdAt: Date.now() - 80000 },
+        // Sábado
+        { id: 'mock-15', title: 'Torneo fútbol o básquet universitario', category: 'Deporte/Salud', day: 'Sábado', hours: 2.0, completed: false, createdAt: Date.now() - 60000 },
+        { id: 'mock-16', title: 'Limpieza de habitación y compras semanales', category: 'Trámites', day: 'Sábado', hours: 2.5, completed: false, createdAt: Date.now() - 40000 },
+        { id: 'mock-17', title: 'Repaso y tareas de la semana', category: 'Estudio', day: 'Sábado', hours: 2.0, completed: false, createdAt: Date.now() - 20000 },
+        // Domingo
+        { id: 'mock-18', title: 'Almuerzo familiar y sobremesa', category: 'Ocio/Descanso', day: 'Domingo', hours: 3.0, completed: false, createdAt: Date.now() - 10000 },
+        { id: 'mock-19', title: 'Planificación de metas y semana entrante', category: 'Estudio', day: 'Domingo', hours: 1.0, completed: false, createdAt: Date.now() - 5000 },
+        { id: 'mock-20', title: 'Descanso total / Desconexión digital', category: 'Ocio/Descanso', day: 'Domingo', hours: 3.0, completed: false, createdAt: Date.now() }
+      ];
+
+      // ==========================================
+      // ESTADO DE LA APLICACIÓN
+      // ==========================================
+      let activities = [];
+      let currentCategoryFilter = 'all';
+      let currentSearchQuery = '';
+      let currentViewMode = 'all'; // 'all' o 'single'
+      let selectedSingleDay = 'Lunes';
+      let categoryChartInstance = null;
+
+      // ==========================================
+      // ELEMENTOS DEL DOM
+      // ==========================================
+      const activityForm = document.getElementById('activityForm');
+      const taskNameInput = document.getElementById('taskName');
+      const taskCategoryInput = document.getElementById('taskCategory');
+      const taskDayInput = document.getElementById('taskDay');
+      const taskDurationInput = document.getElementById('taskDuration');
+      const durationDisplay = document.getElementById('durationDisplay');
+      const btnQuickHours = document.querySelectorAll('.btn-quick-hour');
+
+      const healthAlertContainer = document.getElementById('healthAlertContainer');
+      const kpiTotalHours = document.getElementById('kpiTotalHours');
+      const kpiWeeklyPct = document.getElementById('kpiWeeklyPct');
+      const kpiFreeHours = document.getElementById('kpiFreeHours');
+      const kpiSleepAvg = document.getElementById('kpiSleepAvg');
+      const kpiTopCategory = document.getElementById('kpiTopCategory');
+      const kpiTopCategoryHours = document.getElementById('kpiTopCategoryHours');
+      const kpiTopCatIcon = document.getElementById('kpiTopCatIcon');
+      const kpiTopCatIconWrapper = document.getElementById('kpiTopCatIconWrapper');
+      const kpiCompletedRatio = document.getElementById('kpiCompletedRatio');
+      const kpiCompletedPct = document.getElementById('kpiCompletedPct');
+
+      const categoryChartCanvas = document.getElementById('categoryChart');
+      const chartEmptyMessage = document.getElementById('chartEmptyMessage');
+      const categoryBreakdown = document.getElementById('categoryBreakdown');
+
+      const viewModeAllBtn = document.getElementById('viewModeAll');
+      const viewModeSingleBtn = document.getElementById('viewModeSingle');
+      const singleDaySelectorContainer = document.getElementById('singleDaySelectorContainer');
+      const dayTabsGroup = document.getElementById('dayTabsGroup');
+      const filterCatBtns = document.querySelectorAll('.filter-cat-btn');
+      const searchActivitiesInput = document.getElementById('searchActivities');
+      const scheduleViewContainer = document.getElementById('scheduleViewContainer');
+
+      const btnResetDemo = document.getElementById('btnResetDemo');
+      const btnClearAll = document.getElementById('btnClearAll');
+      const toastContainer = document.getElementById('toastContainer');
+      const btnOpenAddModalMobile = document.getElementById('btnOpenAddModalMobile');
+
+      // ==========================================
+      // INICIALIZACIÓN Y PERSISTENCIA
+      // ==========================================
+      function init() {
+        loadActivities();
+        setupEventListeners();
+        initDayTabs();
+        render();
+      }
+
+      function loadActivities() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          try {
+            activities = JSON.parse(stored);
+          } catch (e) {
+            console.error('Error al parsear localStorage:', e);
+            activities = [...MOCK_ACTIVITIES];
+            saveActivities();
+          }
+        } else {
+          // Precarga datos de prueba si está vacío
+          activities = [...MOCK_ACTIVITIES];
+          saveActivities();
+        }
+      }
+
+      function saveActivities() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(activities));
+      }
+
+      // ==========================================
+      // TOASTS Y FEEDBACK
+      // ==========================================
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const icon = type === 'success' ? 'fa-circle-check text-emerald-500' : 
+                     type === 'error' ? 'fa-circle-exclamation text-red-500' : 
+                     type === 'warning' ? 'fa-triangle-exclamation text-amber-500' : 'fa-circle-info text-indigo-500';
+
+        toast.className = 'pointer-events-auto flex items-center gap-2.5 px-4 py-3 bg-white border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl shadow-xl transition-all duration-300 transform translate-y-4 opacity-0';
+        toast.innerHTML = `
+          <i class="fa-solid ${icon} text-sm shrink-0"></i>
+          <span>${message}</span>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Animación de entrada
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-4', 'opacity-0');
+        });
+
+        // Remoción automática
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+          }, 300);
+        }, 3200);
+      }
+
+      // ==========================================
+      // EVENT LISTENERS
+      // ==========================================
+      function setupEventListeners() {
+        // Actualizar visualizador de duración
+        taskDurationInput.addEventListener('input', () => {
+          const val = parseFloat(taskDurationInput.value) || 0;
+          durationDisplay.textContent = `${val.toFixed(1)} hrs`;
+        });
+
+        // Botones rápidos de horas
+        btnQuickHours.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const h = parseFloat(btn.dataset.hours);
+            taskDurationInput.value = h;
+            durationDisplay.textContent = `${h.toFixed(1)} hrs`;
+          });
+        });
+
+        // Submit Formulario
+        activityForm.addEventListener('submit', handleAddActivity);
+
+        // Filtro por categoría
+        filterCatBtns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            filterCatBtns.forEach(b => {
+              b.classList.remove('bg-slate-800', 'text-white');
+              b.classList.add('bg-slate-100', 'text-slate-600');
+            });
+            btn.classList.add('bg-slate-800', 'text-white');
+            btn.classList.remove('bg-slate-100', 'text-slate-600');
+
+            currentCategoryFilter = btn.dataset.cat;
+            renderSchedule();
+          });
+        });
+
+        // Búsqueda en tiempo real
+        searchActivitiesInput.addEventListener('input', (e) => {
+          currentSearchQuery = e.target.value.trim().toLowerCase();
+          renderSchedule();
+        });
+
+        // Cambio de Modo de Vista (Semana Completa vs Por Día)
+        viewModeAllBtn.addEventListener('click', () => {
+          currentViewMode = 'all';
+          viewModeAllBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+          viewModeAllBtn.classList.remove('text-slate-600');
+          viewModeSingleBtn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+          viewModeSingleBtn.classList.add('text-slate-600');
+          singleDaySelectorContainer.classList.add('hidden');
+          renderSchedule();
+        });
+
+        viewModeSingleBtn.addEventListener('click', () => {
+          currentViewMode = 'single';
+          viewModeSingleBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+          viewModeSingleBtn.classList.remove('text-slate-600');
+          viewModeAllBtn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+          viewModeAllBtn.classList.add('text-slate-600');
+          singleDaySelectorContainer.classList.remove('hidden');
+          renderSchedule();
+        });
+
+        // Botón Restablecer Datos de Demostración
+        btnResetDemo.addEventListener('click', () => {
+          if (confirm('¿Deseas restablecer las actividades de ejemplo recomendadas para estudiantes? Esto reemplazará tu lista actual.')) {
+            activities = JSON.parse(JSON.stringify(MOCK_ACTIVITIES));
+            saveActivities();
+            render();
+            showToast('Datos de demostración cargados exitosamente', 'success');
+          }
+        });
+
+        // Botón Vaciar Todo
+        btnClearAll.addEventListener('click', () => {
+          if (confirm('¿Estás seguro de que deseas eliminar todas las actividades guardadas?')) {
+            activities = [];
+            saveActivities();
+            render();
+            showToast('Se han vaciado todas las actividades', 'warning');
+          }
+        });
+
+        // Mobile Scroll To Form
+        if (btnOpenAddModalMobile) {
+          btnOpenAddModalMobile.addEventListener('click', () => {
+            activityForm.scrollIntoView({ behavior: 'smooth' });
+            taskNameInput.focus();
+          });
+        }
+      }
+
+      function initDayTabs() {
+        dayTabsGroup.innerHTML = '';
+        DAYS_ORDER.forEach(day => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `day-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+            day === selectedSingleDay 
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+          }`;
+          btn.textContent = day;
+          btn.addEventListener('click', () => {
+            selectedSingleDay = day;
+            document.querySelectorAll('.day-tab-btn').forEach(b => {
+              b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+              b.classList.add('bg-slate-50', 'text-slate-700', 'border-slate-200');
+            });
+            btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+            btn.classList.remove('bg-slate-50', 'text-slate-700', 'border-slate-200');
+            renderSchedule();
+          });
+          dayTabsGroup.appendChild(btn);
+        });
+      }
+
+      // ==========================================
+      // AGREGAR / EDITAR / ELIMINAR ACTIVIDADES
+      // ==========================================
+      function handleAddActivity(e) {
+        e.preventDefault();
+
+        const title = taskNameInput.value.trim();
+        const category = taskCategoryInput.value;
+        const day = taskDayInput.value;
+        const hours = parseFloat(taskDurationInput.value);
+
+        if (!title) {
+          showToast('Ingresa el nombre de la actividad', 'error');
+          taskNameInput.focus();
+          return;
+        }
+
+        if (isNaN(hours) || hours <= 0 || hours > 24) {
+          showToast('Ingresa una duración válida entre 0.5 y 24 horas', 'error');
+          taskDurationInput.focus();
+          return;
+        }
+
+        // Crear nueva actividad
+        const newActivity = {
+          id: 'act-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+          title,
+          category,
+          day,
+          hours,
+          completed: false,
+          createdAt: Date.now()
+        };
+
+        activities.unshift(newActivity);
+        saveActivities();
+        render();
+
+        // Reset del formulario
+        taskNameInput.value = '';
+        taskDurationInput.value = '2';
+        durationDisplay.textContent = '2.0 hrs';
+        taskNameInput.focus();
+
+        showToast(`"${title}" agregada al día ${day}`, 'success');
+      }
+
+      window.toggleActivityComplete = function (id) {
+        const item = activities.find(a => a.id === id);
+        if (item) {
+          item.completed = !item.completed;
+          saveActivities();
+          render();
+          showToast(item.completed ? `¡Completada: "${item.title}"!` : `Reabierta: "${item.title}"`, 'info');
+        }
+      };
+
+      window.deleteActivity = function (id) {
+        const index = activities.findIndex(a => a.id === id);
+        if (index !== -1) {
+          const removed = activities.splice(index, 1)[0];
+          saveActivities();
+          render();
+          showToast(`Eliminada: "${removed.title}"`, 'warning');
+        }
+      };
+
+      // ==========================================
+      // RENDERIZADO GLOBAL
+      // ==========================================
+      function render() {
+        renderHealthAlert();
+        renderKPIs();
+        renderChart();
+        renderSchedule();
+      }
+
+      // 1. ALERTA DE SALUD Y BALANCE DE VIDA
+      function renderHealthAlert() {
+        const totalHours = activities.reduce((acc, curr) => acc + curr.hours, 0);
+        const freeHours = Math.max(0, TOTAL_WEEK_HOURS - totalHours);
+        const avgDailySleepAndFree = (freeHours / 7).toFixed(1);
+
+        let alertHTML = '';
+
+        if (totalHours >= HEALTHY_HOURS_LIMIT) {
+          // ALERTA CRÍTICA: Más de 112 horas a la semana (menos de 8h diarias para dormir, comer y descanso)
+          alertHTML = `
+            <div class="p-4 sm:p-5 rounded-2xl bg-red-50 border-2 border-red-500 shadow-lg shadow-red-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-pulse">
+              <div class="flex items-start gap-3.5">
+                <div class="w-12 h-12 rounded-xl bg-red-600 text-white flex items-center justify-center text-xl shrink-0 shadow-md shadow-red-300">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-red-600 text-white uppercase tracking-wider">
+                      Alerta de Riesgo de Agotamiento (Burnout)
+                    </span>
+                    <span class="text-xs font-bold text-red-700">${totalHours.toFixed(1)} hrs activas</span>
+                  </div>
+                  <h3 class="text-base font-bold text-red-900 mt-1">
+                    ¡Tu carga semanal excede el límite saludable recomendado!
+                  </h3>
+                  <p class="text-xs text-red-700 mt-0.5 max-w-2xl leading-relaxed">
+                    Has programado más de 112 horas semanales activas. Te quedan apenas <strong>${avgDailySleepAndFree} horas al día</strong> para dormir, alimentarte y descansar. Como estudiante recién egresado, esto puede perjudicar tu rendimiento académico y salud mental. Considera redistribuir o pausar compromisos no esenciales.
+                  </p>
+                </div>
+              </div>
+              <div class="shrink-0 w-full sm:w-auto text-right">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-red-600 text-xs font-bold border border-red-200 shadow-sm">
+                  <i class="fa-solid fa-bed"></i> Solo ${avgDailySleepAndFree}h/día libres
+                </span>
+              </div>
+            </div>
+          `;
+        } else if (totalHours > 85) {
+          // ADVERTENCIA MODERADA: Carga alta (85 a 111 horas)
+          alertHTML = `
+            <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shrink-0">
+                  <i class="fa-solid fa-bolt-lightning"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-800 uppercase tracking-wide">
+                      Carga Exigente
+                    </span>
+                    <span class="text-xs font-semibold text-amber-800">${totalHours.toFixed(1)} hrs semanales</span>
+                  </div>
+                  <h4 class="text-sm font-bold text-amber-950 mt-0.5">Semana de alta demanda horaria</h4>
+                  <p class="text-xs text-amber-700">Tienes ~${avgDailySleepAndFree}h diarias para dormir y descansar. Mantén pausas activas para evitar fatiga acumulada.</p>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (totalHours > 0) {
+          // ESTADO SALUDABLE Y BALANCEADO
+          alertHTML = `
+            <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-base shrink-0">
+                  <i class="fa-solid fa-shield-heart"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-emerald-800 uppercase tracking-wide">Balance Saludable</span>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold">Óptimo para estudiar y trabajar</span>
+                  </div>
+                  <p class="text-xs text-emerald-700 mt-0.5">
+                    Tu semana cuenta con un promedio de <strong>${avgDailySleepAndFree} horas diarias libres</strong> para un sueño reparador, alimentación consciente y tiempo personal.
+                  </p>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          // SIN ACTIVIDADES
+          alertHTML = `
+            <div class="p-3.5 rounded-2xl bg-slate-100 border border-slate-200 text-slate-600 flex items-center gap-3 text-xs">
+              <i class="fa-solid fa-info-circle text-slate-400 text-base"></i>
+              <span>Comienza agregando las materias de tu universidad, turnos de trabajo y hábitos saludables en el formulario.</span>
+            </div>
+          `;
+        }
+
+        healthAlertContainer.innerHTML = alertHTML;
+      }
+
+      // 2. MÉTRICAS KPIs
+      function renderKPIs() {
+        const totalHours = activities.reduce((acc, curr) => acc + curr.hours, 0);
+        const freeHours = Math.max(0, TOTAL_WEEK_HOURS - totalHours);
+        const avgFreeDaily = (freeHours / 7).toFixed(1);
+        const weeklyPct = Math.min(100, (totalHours / TOTAL_WEEK_HOURS) * 100).toFixed(0);
+
+        kpiTotalHours.textContent = totalHours.toFixed(1);
+        kpiWeeklyPct.textContent = `${weeklyPct}% de tu semana ocupada`;
+
+        kpiFreeHours.textContent = freeHours.toFixed(1);
+        kpiSleepAvg.textContent = `~${avgFreeDaily} h/día descanso & sueño`;
+
+        // Calcular categoría principal
+        const catHours = {};
+        activities.forEach(a => {
+          catHours[a.category] = (catHours[a.category] || 0) + a.hours;
+        });
+
+        let topCat = 'Ninguno';
+        let maxHours = 0;
+        for (const [cat, hrs] of Object.entries(catHours)) {
+          if (hrs > maxHours) {
+            maxHours = hrs;
+            topCat = cat;
+          }
+        }
+
+        if (maxHours > 0) {
+          kpiTopCategory.textContent = topCat;
+          kpiTopCategoryHours.textContent = `${maxHours.toFixed(1)} hrs dedicadas`;
+          const meta = CATEGORY_META[topCat] || CATEGORY_META['Estudio'];
+          kpiTopCatIcon.className = meta.icon;
+          kpiTopCatIconWrapper.style.color = meta.dotColor;
+          kpiTopCatIconWrapper.style.backgroundColor = meta.dotColor + '15';
+        } else {
+          kpiTopCategory.textContent = 'Sin datos';
+          kpiTopCategoryHours.textContent = '0 hrs dedicadas';
+          kpiTopCatIcon.className = 'fa-solid fa-calendar';
+          kpiTopCatIconWrapper.style.color = '#94a3b8';
+          kpiTopCatIconWrapper.style.backgroundColor = '#f1f5f9';
+        }
+
+        // Tareas completadas
+        const totalTasks = activities.length;
+        const completedTasks = activities.filter(a => a.completed).length;
+        const pctCompleted = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(0) : 0;
+
+        kpiCompletedRatio.textContent = `${completedTasks}/${totalTasks}`;
+        kpiCompletedPct.textContent = `${pctCompleted}% completado`;
+      }
+
+      // 3. GRÁFICO CIRCULAR (CHART.JS DOUGHNUT)
+      function renderChart() {
+        const catHours = {
+          'Estudio': 0,
+          'Trabajo': 0,
+          'Ocio/Descanso': 0,
+          'Deporte/Salud': 0,
+          'Trámites': 0
+        };
+
+        let totalHours = 0;
+        activities.forEach(a => {
+          if (catHours[a.category] !== undefined) {
+            catHours[a.category] += a.hours;
+          } else {
+            catHours[a.category] = a.hours;
+          }
+          totalHours += a.hours;
+        });
+
+        const labels = Object.keys(catHours);
+        const dataValues = labels.map(l => catHours[l]);
+        const backgroundColors = labels.map(l => CATEGORY_META[l]?.dotColor || '#64748b');
+
+        // Si no hay horas
+        if (totalHours === 0) {
+          if (categoryChartInstance) {
+            categoryChartInstance.destroy();
+            categoryChartInstance = null;
+          }
+          categoryChartCanvas.classList.add('hidden');
+          chartEmptyMessage.classList.remove('hidden');
+          categoryBreakdown.innerHTML = '<p class="text-xs text-center text-slate-400 py-2">No hay distribución horaria disponible.</p>';
+          return;
+        }
+
+        categoryChartCanvas.classList.remove('hidden');
+        chartEmptyMessage.classList.add('hidden');
+
+        if (categoryChartInstance) {
+          categoryChartInstance.data.labels = labels;
+          categoryChartInstance.data.datasets[0].data = dataValues;
+          categoryChartInstance.data.datasets[0].backgroundColor = backgroundColors;
+          categoryChartInstance.update();
+        } else {
+          const ctx = categoryChartCanvas.getContext('2d');
+          categoryChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: labels,
+              datasets: [{
+                data: dataValues,
+                backgroundColor: backgroundColors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false // Usamos nuestra propia leyenda detallada
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const value = context.raw || 0;
+                      const pct = totalHours > 0 ? ((value / totalHours) * 100).toFixed(1) : 0;
+                      return ` ${context.label}: ${value.toFixed(1)} hrs (${pct}%)`;
+                    }
+                  }
+                }
+              },
+              cutout: '68%'
+            }
+          });
+        }
+
+        // Renderizar leyenda personalizada interactiva
+        renderCategoryBreakdown(catHours, totalHours);
+      }
+
+      function renderCategoryBreakdown(catHours, totalHours) {
+        let html = '';
+        for (const [cat, hrs] of Object.entries(catHours)) {
+          if (hrs <= 0) continue;
+          const meta = CATEGORY_META[cat] || { dotColor: '#64748b', label: cat };
+          const pct = totalHours > 0 ? ((hrs / totalHours) * 100).toFixed(1) : 0;
+
+          html += `
+            <div class="flex items-center justify-between text-xs py-1">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${meta.dotColor};"></span>
+                <span class="font-medium text-slate-700">${cat}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900">${hrs.toFixed(1)} hrs</span>
+                <span class="text-slate-400 font-semibold w-12 text-right">(${pct}%)</span>
+              </div>
+            </div>
+          `;
+        }
+        categoryBreakdown.innerHTML = html;
+      }
+
+      // 4. PLANIFICADOR SEMANAL / LISTA DE ACTIVIDADES
+      function renderSchedule() {
+        scheduleViewContainer.innerHTML = '';
+
+        // Filtrado por categoría y texto
+        let filtered = activities.filter(item => {
+          const matchCat = currentCategoryFilter === 'all' || item.category === currentCategoryFilter;
+          const matchQuery = !currentSearchQuery || 
+                             item.title.toLowerCase().includes(currentSearchQuery) || 
+                             item.category.toLowerCase().includes(currentSearchQuery) ||
+                             item.day.toLowerCase().includes(currentSearchQuery);
+          return matchCat && matchQuery;
+        });
+
+        // Determinar qué días mostrar según el modo de vista
+        const daysToDisplay = currentViewMode === 'single' ? [selectedSingleDay] : DAYS_ORDER;
+
+        let totalShownItems = 0;
+
+        daysToDisplay.forEach(day => {
+          const dayItems = filtered.filter(item => item.day === day);
+          const dayAllItems = activities.filter(item => item.day === day); // Sin filtros para calcular carga real del día
+          const dayTotalHours = dayAllItems.reduce((acc, curr) => acc + curr.hours, 0);
+
+          totalShownItems += dayItems.length;
+
+          // Estado del día (alerta si > 14 horas activas)
+          let dayBadge = '';
+          if (dayTotalHours >= 14) {
+            dayBadge = `<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold border border-red-200">
+              <i class="fa-solid fa-triangle-exclamation"></i> Sobrecargado (${dayTotalHours.toFixed(1)}h)
+            </span>`;
+          } else if (dayTotalHours >= 9) {
+            dayBadge = `<span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
+              Intenso (${dayTotalHours.toFixed(1)}h)
+            </span>`;
+          } else {
+            dayBadge = `<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+              ${dayTotalHours.toFixed(1)} hrs
+            </span>`;
+          }
+
+          // Crear tarjeta del día
+          const dayCard = document.createElement('div');
+          dayCard.className = 'bg-white rounded-2xl border border-slate-200 custom-shadow overflow-hidden transition';
+
+          // Cabecera del día
+          const header = document.createElement('div');
+          header.className = 'px-4 sm:px-5 py-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between';
+          header.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full ${dayItems.length > 0 ? 'bg-indigo-600' : 'bg-slate-300'}"></span>
+              <h3 class="font-bold text-slate-900 text-sm sm:text-base">${day}</h3>
+              <span class="text-xs text-slate-400 font-medium">(${dayItems.length} ${dayItems.length === 1 ? 'actividad' : 'actividades'})</span>
+            </div>
+            <div>${dayBadge}</div>
+          `;
+          dayCard.appendChild(header);
+
+          // Cuerpo con lista de actividades
+          const listContainer = document.createElement('div');
+          listContainer.className = 'p-3 sm:p-4 divide-y divide-slate-100 space-y-2';
+
+          if (dayItems.length === 0) {
+            listContainer.innerHTML = `
+              <div class="py-6 text-center text-slate-400 text-xs flex flex-col items-center justify-center">
+                <i class="fa-regular fa-calendar-xmark text-2xl mb-1.5 text-slate-300"></i>
+                <p>No hay actividades programadas para este día ${currentCategoryFilter !== 'all' ? 'en esta categoría' : ''}.</p>
+              </div>
+            `;
+          } else {
+            dayItems.forEach(item => {
+              const meta = CATEGORY_META[item.category] || CATEGORY_META['Estudio'];
+
+              const row = document.createElement('div');
+              row.className = `pt-2 first:pt-0 flex items-center justify-between gap-3 group p-2 rounded-xl transition ${
+                item.completed ? 'bg-slate-50 opacity-60' : 'hover:bg-slate-50'
+              }`;
+
+              row.innerHTML = `
+                <!-- Checkbox y detalles -->
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <button 
+                    type="button"
+                    onclick="toggleActivityComplete('${item.id}')"
+                    title="${item.completed ? 'Marcar como pendiente' : 'Marcar como completada'}"
+                    class="w-6 h-6 rounded-lg border flex items-center justify-center text-xs transition shrink-0 ${
+                      item.completed 
+                        ? 'bg-emerald-600 border-emerald-600 text-white' 
+                        : 'border-slate-300 hover:border-indigo-500 text-transparent hover:text-indigo-400'
+                    }"
+                  >
+                    <i class="fa-solid fa-check"></i>
+                  </button>
+
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="text-xs px-2 py-0.5 rounded-full font-semibold border ${meta.badgeClass}">
+                        <i class="${meta.icon} text-[10px] mr-1"></i>${item.category}
+                      </span>
+                      <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        <i class="fa-regular fa-clock text-[10px] mr-1"></i>${item.hours.toFixed(1)} hrs
+                      </span>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-800 mt-1 truncate ${item.completed ? 'line-through text-slate-400' : ''}">
+                      ${escapeHTML(item.title)}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Botón Eliminar -->
+                <div class="shrink-0 flex items-center gap-1">
+                  <button 
+                    type="button"
+                    onclick="deleteActivity('${item.id}')"
+                    title="Eliminar actividad"
+                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                  >
+                    <i class="fa-regular fa-trash-can text-sm"></i>
+                  </button>
+                </div>
+              `;
+
+              listContainer.appendChild(row);
+            });
+          }
+
+          dayCard.appendChild(listContainer);
+          scheduleViewContainer.appendChild(dayCard);
+        });
+
+        // Mensaje global si la búsqueda no arroja ningún resultado
+        if (totalShownItems === 0 && activities.length > 0) {
+          scheduleViewContainer.innerHTML = `
+            <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500">
+              <i class="fa-solid fa-filter-circle-xmark text-4xl text-slate-300 mb-3"></i>
+              <h4 class="text-base font-bold text-slate-800">No se encontraron actividades</h4>
+              <p class="text-xs text-slate-500 mt-1">Prueba cambiando los filtros de categoría o el término de búsqueda.</p>
+              <button 
+                onclick="document.getElementById('searchActivities').value = ''; document.querySelector('[data-cat=\\'all\\']').click();"
+                class="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-xl hover:bg-indigo-100 transition"
+              >
+                Limpiar Filtros
+              </button>
+            </div>
+          `;
+        }
+      }
+
+      // Función auxiliar para escapar texto y prevenir XSS
+      function escapeHTML(str) {
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      // Arrancar la app al cargar el DOM
+      document.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
+</body>
+</html>
